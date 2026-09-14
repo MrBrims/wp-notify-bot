@@ -5,6 +5,7 @@ import logging
 from telegram.ext import Application, CommandHandler
 
 from wp_notify_bot.bot.handlers import (
+    BOT_COMMANDS,
     AppDeps,
     DEPS_KEY,
     cmd_check,
@@ -44,6 +45,7 @@ def build_application(settings: Settings) -> Application:
 async def _post_init(application: Application) -> None:
     deps: AppDeps = application.bot_data[DEPS_KEY]
     await deps.store.init()
+    await application.bot.set_my_commands(BOT_COMMANDS)
     interval = deps.settings.poll_interval_seconds
     job_queue = application.job_queue
     if job_queue is None:

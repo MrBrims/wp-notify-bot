@@ -70,6 +70,42 @@ async def test_seen_items_are_not_delivered_twice(tmp_path: Path) -> None:
     assert await store.get_meta("last_core_version") == "6.8.2"
 
 
+async def test_last_core_version_prefers_newest_not_list_order(
+    tmp_path: Path,
+) -> None:
+    store = Store(str(tmp_path / "bot.db"))
+    await store.init()
+    notifier = RecordingNotifier(store)
+    await run_pipeline(
+        [FakeSource([_item("6.9"), _item("6.8.2")])],
+        store,
+        PassthroughSummarizer(),
+        notifier,
+    )
+    assert await store.get_meta("last_core_version") == "6.9"
+
+    await run_pipeline(
+        [FakeSource([_item("6.8.3"), _item("6.10")])],
+        store,
+        PassthroughSummarizer(),
+        notifier,
+    )
+    assert await store.get_meta("last_core_version") == "6.10"
+
+
+async def test_last_core_version_does_not_downgrade(tmp_path: Path) -> None:
+    store = Store(str(tmp_path / "bot.db"))
+    await store.init()
+    await store.set_meta("last_core_version", "6.9")
+    await run_pipeline(
+        [FakeSource([_item("6.8.2")])],
+        store,
+        PassthroughSummarizer(),
+        RecordingNotifier(store),
+    )
+    assert await store.get_meta("last_core_version") == "6.9"
+
+
 async def test_subscribe_and_unsubscribe(tmp_path: Path) -> None:
     store = Store(str(tmp_path / "bot.db"))
     await store.init()
