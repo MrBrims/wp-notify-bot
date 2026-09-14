@@ -1,0 +1,30 @@
+{
+  "offers": [
+    {
+      "response": "upgrade",
+      "download": "https://downloads.wordpress.org/release/wordpress-6.8.2.zip",
+      "locale": "en_US",
+      "packages": {
+        "full": "https://downloads.wordpress.org/release/wordpress-6.8.2.zip"
+      },
+      "current": "6.8.2",
+      "version": "6.8.2",
+      "php_version": "7.2.24",
+      "mysql_version": "5.5.5"
+    },
+    {
+      "response": "upgrade",
+      "download": "https://downloads.wordpress.org/release/wordpress-6.8.2.zip",
+      "version": "6.8.2",
+      "php_version": "7.2.24",
+      "mysql_version": "5.5.5"
+    },
+    {
+      "response": "autoupdate",
+      "download": "https://downloads.wordpress.org/release/wordpress-6.7.2.zip",
+      "version": "6.7.2",
+      "php_version": "7.2.24",
+      "mysql_version": "5.5.5"
+    }
+  ]
+}
