@@ -4,7 +4,7 @@
 [![Telegram](https://img.shields.io/badge/Telegram-Bot_API-26A5E4.svg)](https://core.telegram.org/bots/api)
 [![WordPress](https://img.shields.io/badge/WordPress.org-API-21759B.svg)](https://api.wordpress.org/core/version-check/1.7/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
-[![Version](https://img.shields.io/badge/Version-1.0.0-green.svg)](#changelog)
+[![Version](https://img.shields.io/badge/Version-1.0.2-green.svg)](#changelog)
 
 Local Docker Telegram bot that watches official WordPress core releases (not a site you host) and notifies subscribers. Updates come from the WordPress.org version-check API. Plugin-vulnerability feeds and OpenRouter summaries are reserved as interfaces; they are not wired in this release.
 
@@ -122,6 +122,14 @@ wp-notify-bot/
 Host `./data` is mounted at `/app/data` in the container.
 
 ## Changelog
+
+### 1.0.2
+
+- **FIX**: `/status` stores the newest core release version, not the last item in the poll list
+
+### 1.0.1
+
+- **NEW**: Telegram command menu (`/start`, `/stop`, `/status`, `/check`) registered on bot startup
 
 ### 1.0.0
 

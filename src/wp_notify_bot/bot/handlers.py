@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from telegram import Update
+from telegram import BotCommand, Update
 from telegram.ext import ContextTypes
 
 from wp_notify_bot.config import Settings, is_user_allowed
@@ -15,6 +15,13 @@ from wp_notify_bot.summarizer.base import Summarizer
 logger = logging.getLogger(__name__)
 
 DEPS_KEY = "deps"
+
+BOT_COMMANDS = [
+    BotCommand("start", "Подписаться на уведомления о релизах WordPress"),
+    BotCommand("stop", "Отписаться от уведомлений"),
+    BotCommand("status", "Последняя версия и время проверки"),
+    BotCommand("check", "Проверить релизы сейчас"),
+]
 
 
 class AppDeps:
