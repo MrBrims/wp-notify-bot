@@ -8,6 +8,7 @@ from dataclasses import dataclass
 class Settings:
     telegram_bot_token: str
     allowed_user_ids: frozenset[int]
+    admin_user_ids: frozenset[int]
     poll_interval_seconds: int
     database_path: str
     wordpress_api_url: str
@@ -33,6 +34,9 @@ def load_settings() -> Settings:
         allowed_user_ids=_parse_user_ids(
             os.environ.get("TELEGRAM_ALLOWED_USER_IDS", "")
         ),
+        admin_user_ids=_parse_user_ids(
+            os.environ.get("TELEGRAM_ADMIN_USER_IDS", "")
+        ),
         poll_interval_seconds=max(60, int(interval_raw)),
         database_path=os.environ.get("DATABASE_PATH", "/app/data/bot.db").strip()
         or "/app/data/bot.db",
@@ -50,3 +54,9 @@ def is_user_allowed(settings: Settings, user_id: int | None) -> bool:
     if user_id is None:
         return False
     return user_id in settings.allowed_user_ids
+
+
+def is_user_admin(settings: Settings, user_id: int | None) -> bool:
+    if user_id is None:
+        return False
+    return user_id in settings.admin_user_ids

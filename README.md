@@ -4,7 +4,7 @@
 [![Telegram](https://img.shields.io/badge/Telegram-Bot_API-26A5E4.svg)](https://core.telegram.org/bots/api)
 [![WordPress](https://img.shields.io/badge/WordPress.org-API-21759B.svg)](https://api.wordpress.org/core/version-check/1.7/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
-[![Version](https://img.shields.io/badge/Version-1.0.2-green.svg)](#changelog)
+[![Version](https://img.shields.io/badge/Version-1.0.3-green.svg)](#changelog)
 
 Local Docker Telegram bot that watches official WordPress core releases (not a site you host) and notifies subscribers. Updates come from the WordPress.org version-check API. Plugin-vulnerability feeds and OpenRouter summaries are reserved as interfaces; they are not wired in this release.
 
@@ -42,7 +42,7 @@ cp .env.example .env          # 1. copy env if you have not already
 make up                       # 2. build and start in the background
 ```
 
-Open the bot in Telegram and send `/start` to subscribe. Optional: set `TELEGRAM_ALLOWED_USER_IDS` to a comma-separated list of Telegram user ids so only those accounts can use the bot.
+Open the bot in Telegram and send `/start` to subscribe. Optional: set `TELEGRAM_ALLOWED_USER_IDS` to a comma-separated list of Telegram user ids so only those accounts can use the bot. Set `TELEGRAM_ADMIN_USER_IDS` to the ids that may run `/simulate`.
 
 ## Bot commands
 
@@ -52,6 +52,7 @@ Open the bot in Telegram and send `/start` to subscribe. Optional: set `TELEGRAM
 | `/stop` | Unsubscribe the current chat |
 | `/status` | Last known core version and last check time |
 | `/check` | Run an extra poll immediately |
+| `/simulate` | Admin only: send a fake core release to this chat |
 
 Scheduled polling uses `POLL_INTERVAL_SECONDS` (default 3600). The bot uses long polling; no public webhook URL is required.
 
@@ -81,6 +82,7 @@ Copy `.env` from `.env.example` before `make up`. Restart after changing env val
 | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | Bot token from BotFather (required) |
 | `TELEGRAM_ALLOWED_USER_IDS` | Optional comma-separated Telegram user ids; empty means anyone who can message the bot may subscribe |
+| `TELEGRAM_ADMIN_USER_IDS` | Optional comma-separated Telegram user ids allowed to run `/simulate`; empty means the command is unavailable |
 | `POLL_INTERVAL_SECONDS` | Interval between WordPress.org checks (minimum 60, default 3600) |
 | `DATABASE_PATH` | SQLite path in the container (default `/app/data/bot.db`) |
 | `WORDPRESS_API_URL` | Core version-check endpoint |
@@ -104,8 +106,9 @@ wp-notify-bot/
 │   ├── __main__.py                 # process entry
 │   ├── config.py                   # env settings
 │   ├── models.py                   # NormalizedItem
-│   ├── bot/handlers.py             # /start /stop /status /check
+│   ├── bot/handlers.py             # /start /stop /status /check /simulate
 │   ├── pipeline/run.py             # fetch → seen → summarize → fan-out
+│   ├── pipeline/simulate.py        # fake core release for /simulate
 │   ├── sources/                    # WordPress core + registry for future feeds
 │   ├── storage/db.py               # subscribers and seen_items
 │   ├── summarizer/                 # passthrough now; OpenRouter stub later
@@ -122,6 +125,10 @@ wp-notify-bot/
 Host `./data` is mounted at `/app/data` in the container.
 
 ## Changelog
+
+### 1.0.3
+
+- **NEW**: Admin-only `/simulate` sends a fake WordPress core release to the admin chat; subscribers and SQLite are unchanged
 
 ### 1.0.2
 
