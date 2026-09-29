@@ -153,6 +153,8 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def cmd_simulate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     deps = get_deps(context)
+    if await _deny_if_needed(update, deps.settings):
+        return
     user = update.effective_user
     user_id = user.id if user else None
     if not is_user_admin(deps.settings, user_id):

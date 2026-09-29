@@ -82,7 +82,7 @@ Copy `.env` from `.env.example` before `make up`. Restart after changing env val
 | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | Bot token from BotFather (required) |
 | `TELEGRAM_ALLOWED_USER_IDS` | Optional comma-separated Telegram user ids; empty means anyone who can message the bot may subscribe |
-| `TELEGRAM_ADMIN_USER_IDS` | Optional comma-separated Telegram user ids allowed to run `/simulate`; empty means the command is unavailable |
+| `TELEGRAM_ADMIN_USER_IDS` | Optional comma-separated Telegram user ids allowed to run `/simulate`; empty means the command is unavailable. When `TELEGRAM_ALLOWED_USER_IDS` is set, the admin id must be in that list too |
 | `POLL_INTERVAL_SECONDS` | Interval between WordPress.org checks (minimum 60, default 3600) |
 | `DATABASE_PATH` | SQLite path in the container (default `/app/data/bot.db`) |
 | `WORDPRESS_API_URL` | Core version-check endpoint |
@@ -129,6 +129,7 @@ Host `./data` is mounted at `/app/data` in the container.
 ### 1.0.3
 
 - **NEW**: Admin-only `/simulate` sends a fake WordPress core release to the admin chat; subscribers and SQLite are unchanged
+- **FIX**: `/simulate` follows `TELEGRAM_ALLOWED_USER_IDS` the same way as the other commands
 
 ### 1.0.2
 
