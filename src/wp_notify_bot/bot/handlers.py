@@ -119,12 +119,15 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
     version = await deps.store.get_meta("last_core_version")
     checked = await deps.store.get_meta("last_check_at")
+    feed_at = await deps.store.get_meta("wordfence_feed_at")
     version_line = version or "ещё не известно"
     checked_line = checked or "ещё не было"
+    feed_line = feed_at or "ещё не разбирался"
     if update.effective_message:
         await update.effective_message.reply_text(
             f"Последняя известная версия WordPress: {version_line}\n"
-            f"Последняя проверка: {checked_line}"
+            f"Последняя проверка: {checked_line}\n"
+            f"Фид уязвимостей: {feed_line}"
         )
     await _refresh_admin_menu_if_needed(update, context)
 
@@ -147,7 +150,7 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 f"Найдено новых событий: {len(delivered)}."
             )
         else:
-            await update.effective_message.reply_text("Новых релизов нет.")
+            await update.effective_message.reply_text("Новых уведомлений нет.")
     await _refresh_admin_menu_if_needed(update, context)
 
 
@@ -177,7 +180,7 @@ async def cmd_simulate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def job_poll(context: ContextTypes.DEFAULT_TYPE) -> None:
     deps = get_deps(context)
-    logger.info("Scheduled WordPress core check")
+    logger.info("Scheduled poll")
     await run_pipeline(
         deps.sources,
         deps.store,

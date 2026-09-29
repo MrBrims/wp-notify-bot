@@ -19,7 +19,20 @@ from wp_notify_bot.bot.handlers import (
 from wp_notify_bot.config import Settings, load_settings
 from wp_notify_bot.sources.registry import default_sources
 from wp_notify_bot.storage.db import Store
+from wp_notify_bot.summarizer.base import Summarizer
+from wp_notify_bot.summarizer.openrouter import OpenRouterSummarizer
 from wp_notify_bot.summarizer.passthrough import PassthroughSummarizer
+from wp_notify_bot.summarizer.routing import RoutingSummarizer
+
+
+def build_summarizer(settings: Settings) -> Summarizer:
+    vulnerability = None
+    if settings.openrouter_api_key.strip():
+        vulnerability = OpenRouterSummarizer(
+            settings.openrouter_api_key.strip(),
+            settings.openrouter_model,
+        )
+    return RoutingSummarizer(PassthroughSummarizer(), vulnerability)
 
 
 def build_application(settings: Settings) -> Application:
@@ -27,8 +40,8 @@ def build_application(settings: Settings) -> Application:
     deps = AppDeps(
         settings=settings,
         store=store,
-        sources=default_sources(settings),
-        summarizer=PassthroughSummarizer(),
+        sources=default_sources(settings, store),
+        summarizer=build_summarizer(settings),
     )
     application = (
         Application.builder()

@@ -3,10 +3,11 @@
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB.svg)](https://www.python.org/)
 [![Telegram](https://img.shields.io/badge/Telegram-Bot_API-26A5E4.svg)](https://core.telegram.org/bots/api)
 [![WordPress](https://img.shields.io/badge/WordPress.org-API-21759B.svg)](https://api.wordpress.org/core/version-check/1.7/)
+[![Wordfence](https://img.shields.io/badge/Wordfence-Intelligence_v3-1E3A8A.svg)](https://www.wordfence.com/api/intelligence/v3/vulnerabilities/production)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
-[![Version](https://img.shields.io/badge/Version-1.0.3-green.svg)](#changelog)
+[![Version](https://img.shields.io/badge/Version-1.0.4-green.svg)](#changelog)
 
-Local Docker Telegram bot that watches official WordPress core releases (not a site you host) and notifies subscribers. Updates come from the WordPress.org version-check API. Plugin-vulnerability feeds and OpenRouter summaries are reserved as interfaces; they are not wired in this release.
+Local Docker Telegram bot that notifies subscribers about official WordPress core releases and about serious WordPress core and plugin vulnerabilities. Core releases come from the WordPress.org version-check API. Vulnerabilities come from the Wordfence Intelligence v3 production feed (CVSS 7.0 and above) with a short Russian summary from OpenRouter (`openai/gpt-6-luna`). The bot does not scan a site you host. The first successful feed read marks the current archive as seen and sends nothing.
 
 ## Requirements
 
@@ -86,8 +87,12 @@ Copy `.env` from `.env.example` before `make up`. Restart after changing env val
 | `POLL_INTERVAL_SECONDS` | Interval between WordPress.org checks (minimum 60, default 3600) |
 | `DATABASE_PATH` | SQLite path in the container (default `/app/data/bot.db`) |
 | `WORDPRESS_API_URL` | Core version-check endpoint |
-| `OPENROUTER_API_KEY` | Reserved; not used yet |
-| `OPENROUTER_MODEL` | Reserved; not used yet |
+| `OPENROUTER_API_KEY` | OpenRouter key used to summarize vulnerability alerts. Empty: the alert still goes out with CVSS, CVE, versions, and the link, without the two-sentence summary |
+| `OPENROUTER_MODEL` | OpenRouter model (default `openai/gpt-6-luna`) |
+| `WORDFENCE_API_KEY` | Free Wordfence Intelligence key from the account Integrations page. Empty: vulnerability polling stays off and core releases continue |
+| `WORDFENCE_API_URL` | Production feed URL (default `https://www.wordfence.com/api/intelligence/v3/vulnerabilities/production`) |
+| `VULN_MIN_CVSS` | Minimum CVSS score for core and plugin alerts (default `7.0`). Records rated High or Critical with no numeric score are included. Themes and informational records are skipped. There is no daily cap |
+| `VULN_FEED_CACHE_SECONDS` | How long the downloaded feed file in `data/` is reused (default `21600`) |
 
 ## Stack
 
@@ -95,6 +100,8 @@ Copy `.env` from `.env.example` before `make up`. Restart after changing env val
 - python-telegram-bot (long polling and JobQueue)
 - httpx
 - aiosqlite
+- Wordfence Intelligence API
+- OpenRouter
 - Docker Compose
 - GNU Make
 
@@ -109,9 +116,9 @@ wp-notify-bot/
 │   ├── bot/handlers.py             # /start /stop /status /check /simulate
 │   ├── pipeline/run.py             # fetch → seen → summarize → fan-out
 │   ├── pipeline/simulate.py        # fake core release for /simulate
-│   ├── sources/                    # WordPress core + registry for future feeds
+│   ├── sources/                    # WordPress core and Wordfence production feed
 │   ├── storage/db.py               # subscribers and seen_items
-│   ├── summarizer/                 # passthrough now; OpenRouter stub later
+│   ├── summarizer/                 # release template; OpenRouter for vulnerabilities
 │   └── notify/telegram.py          # Telegram send + per-chat errors
 ├── tests/                          # API fixture and SQLite tests
 ├── data/                           # SQLite volume on the host (gitignored)
@@ -125,6 +132,12 @@ wp-notify-bot/
 Host `./data` is mounted at `/app/data` in the container.
 
 ## Changelog
+
+### 1.0.4
+
+- **NEW**: Wordfence Intelligence v3 production feed notifies subscribers about WordPress core and plugin vulnerabilities with CVSS 7.0 or higher; the first read marks the current archive as seen and sends nothing
+- **NEW**: OpenRouter (`openai/gpt-6-luna`) writes a two-sentence Russian summary; CVSS, CVE, affected versions, the fixed version, and the link stay in the message template
+- **NEW**: `/status` shows when the vulnerability feed was last read
 
 ### 1.0.3
 

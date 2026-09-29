@@ -102,18 +102,34 @@ class Store:
         return row is not None
 
     async def mark_seen(self, source_id: str, uid: str) -> None:
+        await self.mark_seen_many(source_id, [uid])
+
+    async def mark_seen_many(self, source_id: str, uids: list[str]) -> None:
+        if not uids:
+            return
         now = _utc_now()
+        rows = [(source_id, uid, now) for uid in uids]
         async with self._lock:
             async with aiosqlite.connect(self._database_path) as db:
-                await db.execute(
+                await db.executemany(
                     """
                     INSERT INTO seen_items (source_id, uid, seen_at)
                     VALUES (?, ?, ?)
                     ON CONFLICT(source_id, uid) DO NOTHING
                     """,
-                    (source_id, uid, now),
+                    rows,
                 )
                 await db.commit()
+
+    async def seen_uids(self, source_id: str) -> set[str]:
+        async with self._lock:
+            async with aiosqlite.connect(self._database_path) as db:
+                cursor = await db.execute(
+                    "SELECT uid FROM seen_items WHERE source_id = ?",
+                    (source_id,),
+                )
+                rows = await cursor.fetchall()
+        return {str(row[0]) for row in rows}
 
     async def get_meta(self, key: str) -> str | None:
         async with self._lock:
