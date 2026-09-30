@@ -80,6 +80,10 @@ class WordfenceSource(Source):
             if item.uid not in seen
         ]
 
+    async def preview(self) -> list[NormalizedItem]:
+        payload = await self._load_payload()
+        return serious_items(payload, self._min_cvss)
+
     async def _load_payload(self) -> dict[str, Any]:
         if self._load_payload_override is not None:
             return await self._load_payload_override()

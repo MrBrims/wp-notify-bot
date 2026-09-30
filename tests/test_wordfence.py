@@ -203,7 +203,6 @@ def test_registry_adds_wordfence_only_with_key(tmp_path: Path) -> None:
     base = Settings(
         telegram_bot_token="x",
         allowed_user_ids=frozenset(),
-        admin_user_ids=frozenset(),
         poll_interval_seconds=3600,
         database_path=str(tmp_path / "bot.db"),
         wordpress_api_url="https://example.test/",
@@ -214,7 +213,6 @@ def test_registry_adds_wordfence_only_with_key(tmp_path: Path) -> None:
     with_key = Settings(
         telegram_bot_token="x",
         allowed_user_ids=frozenset(),
-        admin_user_ids=frozenset(),
         poll_interval_seconds=3600,
         database_path=str(tmp_path / "bot.db"),
         wordpress_api_url="https://example.test/",

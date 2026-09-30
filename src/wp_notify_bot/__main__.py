@@ -14,7 +14,6 @@ from wp_notify_bot.bot.handlers import (
     cmd_status,
     cmd_stop,
     job_poll,
-    refresh_admin_commands,
 )
 from wp_notify_bot.config import Settings, load_settings
 from wp_notify_bot.sources.registry import default_sources
@@ -62,8 +61,6 @@ async def _post_init(application: Application) -> None:
     deps: AppDeps = application.bot_data[DEPS_KEY]
     await deps.store.init()
     await application.bot.set_my_commands(BOT_COMMANDS)
-    for admin_id in deps.settings.admin_user_ids:
-        await refresh_admin_commands(application.bot, admin_id)
     interval = deps.settings.poll_interval_seconds
     job_queue = application.job_queue
     if job_queue is None:
