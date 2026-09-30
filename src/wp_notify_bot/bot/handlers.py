@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
+from pathlib import Path
 
 from telegram import Bot, BotCommand, BotCommandScopeChat, ReplyKeyboardMarkup, Update
 from telegram.error import TelegramError
@@ -43,6 +44,26 @@ def main_menu_markup() -> ReplyKeyboardMarkup:
         [list(row) for row in MAIN_MENU_ROWS],
         resize_keyboard=True,
     )
+
+
+WELCOME_IMAGE_PATH = Path(__file__).resolve().parent.parent / "assets" / "welcome.jpg"
+
+WELCOME_TEXT = (
+    "<b>Добро пожаловать!</b>\n\n"
+    "Я сообщаю о новых релизах ядра WordPress и о серьёзных уязвимостях "
+    "ядра и плагинов (CVSS от 7.0, фид Wordfence). В сообщении — короткий "
+    "пересказ и ссылка на источник. Установленный сайт я не проверяю.\n\n"
+    f"Сначала нажмите «{SUBSCRIBE_BUTTON}» — без этого уведомления не приходят.\n\n"
+    f"«{SUBSCRIBE_BUTTON}» и «{UNSUBSCRIBE_BUTTON}» — включить или выключить "
+    "рассылку в этот чат\n"
+    f"«{STATUS_BUTTON}» — последняя известная версия ядра, время проверки "
+    "и разбора фида\n"
+    f"«{CHECK_BUTTON}» — опросить источники сразу\n"
+    f"«{SIMULATE_BUTTON}» — прислать вам образец релиза и одной уязвимости\n\n"
+    "Меню открывается этой командой и кнопкой с четырьмя точками "
+    "рядом с полем ввода.\n\n"
+    f"{_MENU_PROMPT}"
+)
 
 
 _TEST_BANNER = "Тест: имитация уведомления.\n\n"
@@ -97,11 +118,25 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat = update.effective_chat
     if chat is not None:
         await clear_chat_command_menu(context.bot, chat.id)
-    if update.effective_message:
-        await update.effective_message.reply_text(
-            _MENU_PROMPT,
-            reply_markup=main_menu_markup(),
-        )
+    message = update.effective_message
+    if message is None:
+        return
+    try:
+        with WELCOME_IMAGE_PATH.open("rb") as photo:
+            await message.reply_photo(
+                photo,
+                caption=WELCOME_TEXT,
+                parse_mode="HTML",
+                reply_markup=main_menu_markup(),
+            )
+        return
+    except (OSError, TelegramError):
+        logger.warning("Could not send welcome image; falling back to text")
+    await message.reply_text(
+        WELCOME_TEXT,
+        parse_mode="HTML",
+        reply_markup=main_menu_markup(),
+    )
 
 
 async def cmd_subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

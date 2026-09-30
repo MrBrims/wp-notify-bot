@@ -5,7 +5,7 @@
 [![WordPress](https://img.shields.io/badge/WordPress.org-API-21759B.svg)](https://api.wordpress.org/core/version-check/1.7/)
 [![Wordfence](https://img.shields.io/badge/Wordfence-Intelligence_v3-1E3A8A.svg)](https://www.wordfence.com/api/intelligence/v3/vulnerabilities/production)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
-[![Version](https://img.shields.io/badge/Version-1.0.8-green.svg)](#changelog)
+[![Version](https://img.shields.io/badge/Version-1.0.9-green.svg)](#changelog)
 
 Local Docker Telegram bot that notifies subscribers about official WordPress core releases and about serious WordPress core and plugin vulnerabilities. Core releases come from the WordPress.org version-check API, with a short Russian summary of the official release announcement. Vulnerabilities come from the Wordfence Intelligence v3 production feed (CVSS 7.0 and above). Both summaries use OpenRouter (`openai/gpt-6-luna`). The bot does not scan a site you host. The first successful feed read marks the current archive as seen and sends nothing.
 
@@ -43,11 +43,11 @@ cp .env.example .env          # 1. copy env if you have not already
 make up                       # 2. build and start in the background
 ```
 
-Open the bot in Telegram and send `/start` to open the main menu, then tap Subscribe. The same keyboard opens from the grid button beside the message field. Optional: set `TELEGRAM_ALLOWED_USER_IDS` to a comma-separated list of Telegram user ids so only those accounts can use the bot.
+Open the bot in Telegram and send `/start`. The bot replies with a welcome image that explains what it tracks and what each button does, and opens the main menu. Then tap Subscribe. The same keyboard opens from the grid button beside the message field. Optional: set `TELEGRAM_ALLOWED_USER_IDS` to a comma-separated list of Telegram user ids so only those accounts can use the bot.
 
 ## Bot commands
 
-The command menu lists only `/start`, which opens the main menu. The same reply keyboard opens from the grid button beside the message field. `/stop`, `/status`, `/check`, and `/simulate` still work if typed.
+The command menu lists only `/start`, which sends the welcome image with a short guide and opens the main menu. If the image cannot be sent, the same guide goes out as plain text. The same reply keyboard opens from the grid button beside the message field. `/stop`, `/status`, `/check`, and `/simulate` still work if typed.
 
 | Button | Action |
 | --- | --- |
@@ -114,7 +114,8 @@ wp-notify-bot/
 │   ├── __main__.py                 # process entry
 │   ├── config.py                   # env settings
 │   ├── models.py                   # NormalizedItem
-│   ├── bot/handlers.py             # /start menu and reply keyboard
+│   ├── assets/welcome.jpg          # /start welcome image
+│   ├── bot/handlers.py             # /start welcome, menu, and reply keyboard
 │   ├── pipeline/run.py             # fetch → seen → summarize → fan-out
 │   ├── pipeline/simulate.py        # preview of a core release and a vulnerability for /simulate
 │   ├── sources/                    # WordPress core, release announcements, Wordfence feed
@@ -133,6 +134,10 @@ wp-notify-bot/
 Host `./data` is mounted at `/app/data` in the container.
 
 ## Changelog
+
+### 1.0.9
+
+- **NEW**: `/start` sends a welcome image with a caption that explains what the bot tracks, that Subscribe comes first, and what each menu button does. The main menu is attached to the same message. If the image cannot be sent, the guide goes out as plain text
 
 ### 1.0.8
 
