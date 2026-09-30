@@ -16,6 +16,7 @@ TEXT_LIMIT = 8000
 _PRERELEASE = re.compile(r"\b(?:beta|rc|release candidate)\b", re.IGNORECASE)
 _TAG = re.compile(r"<[^>]+>")
 _WHITESPACE = re.compile(r"\s+")
+_SPACE_BEFORE_PUNCT = re.compile(r"\s+([.,;:!?])")
 _CUT_MARKERS = (
     "thank you to these wordpress contributors",
     "how to contribute",
@@ -68,6 +69,7 @@ def plain_text(html: str) -> str:
         if index != -1:
             cut_at = min(cut_at, index)
     text = text[:cut_at].strip()
+    text = _SPACE_BEFORE_PUNCT.sub(r"\1", text)
     if len(text) > TEXT_LIMIT:
         text = text[:TEXT_LIMIT].rstrip()
     return text
