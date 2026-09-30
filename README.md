@@ -5,7 +5,7 @@
 [![WordPress](https://img.shields.io/badge/WordPress.org-API-21759B.svg)](https://api.wordpress.org/core/version-check/1.7/)
 [![Wordfence](https://img.shields.io/badge/Wordfence-Intelligence_v3-1E3A8A.svg)](https://www.wordfence.com/api/intelligence/v3/vulnerabilities/production)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
-[![Version](https://img.shields.io/badge/Version-1.0.5-green.svg)](#changelog)
+[![Version](https://img.shields.io/badge/Version-1.0.6-green.svg)](#changelog)
 
 Local Docker Telegram bot that notifies subscribers about official WordPress core releases and about serious WordPress core and plugin vulnerabilities. Core releases come from the WordPress.org version-check API, with a short Russian summary of the official release announcement. Vulnerabilities come from the Wordfence Intelligence v3 production feed (CVSS 7.0 and above). Both summaries use OpenRouter (`openai/gpt-6-luna`). The bot does not scan a site you host. The first successful feed read marks the current archive as seen and sends nothing.
 
@@ -43,7 +43,7 @@ cp .env.example .env          # 1. copy env if you have not already
 make up                       # 2. build and start in the background
 ```
 
-Open the bot in Telegram and send `/start` to subscribe. Optional: set `TELEGRAM_ALLOWED_USER_IDS` to a comma-separated list of Telegram user ids so only those accounts can use the bot. Set `TELEGRAM_ADMIN_USER_IDS` to the ids that may run `/simulate`.
+Open the bot in Telegram and send `/start` to subscribe. Optional: set `TELEGRAM_ALLOWED_USER_IDS` to a comma-separated list of Telegram user ids so only those accounts can use the bot.
 
 ## Bot commands
 
@@ -53,7 +53,7 @@ Open the bot in Telegram and send `/start` to subscribe. Optional: set `TELEGRAM
 | `/stop` | Unsubscribe the current chat |
 | `/status` | Last known core version and last check time |
 | `/check` | Run an extra poll immediately |
-| `/simulate` | Admin only: send a fake core release to this chat |
+| `/simulate` | Send this chat a preview of the current core release and one serious vulnerability |
 
 Scheduled polling uses `POLL_INTERVAL_SECONDS` (default 3600). The bot uses long polling; no public webhook URL is required.
 
@@ -83,7 +83,6 @@ Copy `.env` from `.env.example` before `make up`. Restart after changing env val
 | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | Bot token from BotFather (required) |
 | `TELEGRAM_ALLOWED_USER_IDS` | Optional comma-separated Telegram user ids; empty means anyone who can message the bot may subscribe |
-| `TELEGRAM_ADMIN_USER_IDS` | Optional comma-separated Telegram user ids allowed to run `/simulate`; empty means the command is unavailable. When `TELEGRAM_ALLOWED_USER_IDS` is set, the admin id must be in that list too |
 | `POLL_INTERVAL_SECONDS` | Interval between WordPress.org checks (minimum 60, default 3600) |
 | `DATABASE_PATH` | SQLite path in the container (default `/app/data/bot.db`) |
 | `WORDPRESS_API_URL` | Core version-check endpoint |
@@ -115,7 +114,7 @@ wp-notify-bot/
 │   ├── models.py                   # NormalizedItem
 │   ├── bot/handlers.py             # /start /stop /status /check /simulate
 │   ├── pipeline/run.py             # fetch → seen → summarize → fan-out
-│   ├── pipeline/simulate.py        # fake core release for /simulate
+│   ├── pipeline/simulate.py        # preview of a core release and a vulnerability for /simulate
 │   ├── sources/                    # WordPress core, release announcements, Wordfence feed
 │   ├── storage/db.py               # subscribers and seen_items
 │   ├── summarizer/                 # OpenRouter summaries for releases and vulnerabilities
@@ -132,6 +131,10 @@ wp-notify-bot/
 Host `./data` is mounted at `/app/data` in the container.
 
 ## Changelog
+
+### 1.0.6
+
+- **NEW**: `/simulate` sends this chat a preview of the current core release and one serious vulnerability, built from the live version-check API, the Wordfence feed, and the same OpenRouter summaries as real alerts. Subscribers and SQLite are unchanged. The command uses the same access list as the other commands; `TELEGRAM_ADMIN_USER_IDS` is no longer read
 
 ### 1.0.5
 

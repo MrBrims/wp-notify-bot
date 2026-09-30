@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import logging
 
-from telegram import Bot, BotCommand, BotCommandScopeChat, Update
-from telegram.error import TelegramError
+from telegram import BotCommand, Update
 from telegram.ext import ContextTypes
 
-from wp_notify_bot.config import Settings, is_user_admin, is_user_allowed
+from wp_notify_bot.config import Settings, is_user_allowed
 from wp_notify_bot.notify.telegram import TelegramNotifier
 from wp_notify_bot.pipeline.run import run_pipeline
-from wp_notify_bot.pipeline.simulate import next_test_version, simulated_core_item
+from wp_notify_bot.pipeline.simulate import SimulationPreview, preview_alerts
 from wp_notify_bot.sources.base import Source
 from wp_notify_bot.storage.db import Store
 from wp_notify_bot.summarizer.base import Summarizer
@@ -23,14 +22,11 @@ BOT_COMMANDS = [
     BotCommand("stop", "Отписаться от уведомлений"),
     BotCommand("status", "Последняя версия и время проверки"),
     BotCommand("check", "Проверить релизы сейчас"),
-]
-
-ADMIN_BOT_COMMANDS = BOT_COMMANDS + [
-    BotCommand("simulate", "Имитировать выход новой версии WordPress"),
+    BotCommand("simulate", "Имитировать уведомление о релизе и уязвимости"),
 ]
 
 _TEST_BANNER = (
-    "Тест: имитация релиза, подписчикам ничего не отправлено.\n\n"
+    "Тест: имитация уведомления, подписчикам ничего не отправлено.\n\n"
 )
 
 
@@ -50,26 +46,6 @@ class AppDeps:
 
 def get_deps(context: ContextTypes.DEFAULT_TYPE) -> AppDeps:
     return context.application.bot_data[DEPS_KEY]
-
-
-async def refresh_admin_commands(bot: Bot, user_id: int) -> None:
-    try:
-        await bot.set_my_commands(
-            ADMIN_BOT_COMMANDS,
-            scope=BotCommandScopeChat(chat_id=user_id),
-        )
-    except TelegramError:
-        logger.warning("Could not set admin command menu for user %s", user_id)
-
-
-async def _refresh_admin_menu_if_needed(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
-    deps = get_deps(context)
-    user = update.effective_user
-    if user is None or not is_user_admin(deps.settings, user.id):
-        return
-    await refresh_admin_commands(context.bot, user.id)
 
 
 async def _deny_if_needed(
@@ -97,7 +73,6 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.effective_message.reply_text(
             "Подписка оформлена. Буду присылать уведомления о релизах WordPress core."
         )
-    await _refresh_admin_menu_if_needed(update, context)
 
 
 async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -110,7 +85,6 @@ async def cmd_stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await deps.store.unsubscribe(chat.id)
     if update.effective_message:
         await update.effective_message.reply_text("Подписка отменена.")
-    await _refresh_admin_menu_if_needed(update, context)
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -129,7 +103,6 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             f"Последняя проверка: {checked_line}\n"
             f"Фид уязвимостей: {feed_line}"
         )
-    await _refresh_admin_menu_if_needed(update, context)
 
 
 async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -151,31 +124,48 @@ async def cmd_check(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             )
         else:
             await update.effective_message.reply_text("Новых уведомлений нет.")
-    await _refresh_admin_menu_if_needed(update, context)
 
 
 async def cmd_simulate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     deps = get_deps(context)
     if await _deny_if_needed(update, deps.settings):
         return
-    user = update.effective_user
-    user_id = user.id if user else None
-    if not is_user_admin(deps.settings, user_id):
-        if update.effective_message:
-            await update.effective_message.reply_text("Нет доступа.")
-        return
     chat = update.effective_chat
     if chat is None:
         return
-    current = await deps.store.get_meta("last_core_version")
-    item = simulated_core_item(next_test_version(current))
-    text = _TEST_BANNER + await deps.summarizer.summarize(item)
-    await TelegramNotifier(context.bot, deps.store).send(chat.id, text)
-    await _refresh_admin_menu_if_needed(update, context)
     if update.effective_message:
-        await update.effective_message.reply_text(
-            "Тестовое уведомление отправлено только вам. Версия в базе не изменилась."
-        )
+        await update.effective_message.reply_text("Собираю тестовые уведомления…")
+    preview = await preview_alerts(deps.sources)
+    notifier = TelegramNotifier(context.bot, deps.store)
+    sent = 0
+    for item in (preview.core, preview.vulnerability):
+        if item is None:
+            continue
+        text = _TEST_BANNER + await deps.summarizer.summarize(item)
+        await notifier.send(chat.id, text)
+        sent += 1
+    if update.effective_message:
+        await update.effective_message.reply_text(_simulate_reply(sent, preview))
+
+
+def _simulate_reply(sent: int, preview: SimulationPreview) -> str:
+    if sent:
+        lines = [
+            "Тестовые уведомления отправлены только вам. База не изменилась."
+        ]
+    else:
+        lines = ["Тестовые уведомления не отправлены. База не изменилась."]
+    if preview.core_error:
+        lines.append("Релиз ядра не удалось прочитать.")
+    elif preview.core_missing:
+        lines.append("В ответе WordPress нет релиза.")
+    if preview.vulnerability_disabled:
+        lines.append("Опрос уязвимостей выключен.")
+    elif preview.vulnerability_error:
+        lines.append("Фид уязвимостей не удалось прочитать.")
+    elif preview.vulnerability_empty:
+        lines.append("Серьёзных уязвимостей в фиде нет.")
+    return "\n".join(lines)
 
 
 async def job_poll(context: ContextTypes.DEFAULT_TYPE) -> None:
