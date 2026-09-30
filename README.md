@@ -5,7 +5,7 @@
 [![WordPress](https://img.shields.io/badge/WordPress.org-API-21759B.svg)](https://api.wordpress.org/core/version-check/1.7/)
 [![Wordfence](https://img.shields.io/badge/Wordfence-Intelligence_v3-1E3A8A.svg)](https://www.wordfence.com/api/intelligence/v3/vulnerabilities/production)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
-[![Version](https://img.shields.io/badge/Version-1.0.6-green.svg)](#changelog)
+[![Version](https://img.shields.io/badge/Version-1.0.7-green.svg)](#changelog)
 
 Local Docker Telegram bot that notifies subscribers about official WordPress core releases and about serious WordPress core and plugin vulnerabilities. Core releases come from the WordPress.org version-check API, with a short Russian summary of the official release announcement. Vulnerabilities come from the Wordfence Intelligence v3 production feed (CVSS 7.0 and above). Both summaries use OpenRouter (`openai/gpt-6-luna`). The bot does not scan a site you host. The first successful feed read marks the current archive as seen and sends nothing.
 
@@ -131,6 +131,10 @@ wp-notify-bot/
 Host `./data` is mounted at `/app/data` in the container.
 
 ## Changelog
+
+### 1.0.7
+
+- **NEW**: Core release and vulnerability alerts use emoji on the title and the fact lines (PHP, MySQL, CVSS, fixed version, and links). The `/simulate` preview banner no longer says that subscribers were not notified
 
 ### 1.0.6
 
