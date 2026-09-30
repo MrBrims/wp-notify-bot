@@ -30,7 +30,7 @@ def core_release_message(
     )
     version = escape(item.uid)
     lines = [
-        f"<b>WordPress {version}</b>",
+        f"🆕 <b>WordPress {version}</b>",
         "",
         "Вышел новый релиз ядра WordPress.",
         "",
@@ -39,13 +39,13 @@ def core_release_message(
     if prose:
         lines.append(escape(prose))
         lines.append("")
-    lines.append(f"PHP: {php}")
-    lines.append(f"MySQL: {mysql}")
+    lines.append(f"🐘 PHP: {php}")
+    lines.append(f"🐬 MySQL: {mysql}")
     lines.append("")
-    lines.append(f'<a href="{download}">Скачать</a>')
+    lines.append(f'⬇️ <a href="{download}">Скачать</a>')
     announcement = (announcement_url or "").strip()
     if announcement:
         href = escape(announcement, quote=True)
-        lines.append(f'<a href="{href}">Анонс</a>')
-    lines.append(f'<a href="{releases}">Анонсы релизов</a>')
+        lines.append(f'📰 <a href="{href}">Анонс</a>')
+    lines.append(f'📋 <a href="{releases}">Анонсы релизов</a>')
     return "\n".join(lines)

@@ -238,12 +238,12 @@ async def test_simulate_sends_release_and_vulnerability_to_caller(
     assert [chat_id for chat_id, _text in bot.sent] == [7, 7]
     release, vulnerability = (text for _chat_id, text in bot.sent)
     assert release.startswith(
-        "Тест: имитация уведомления, подписчикам ничего не отправлено."
+        "Тест: имитация уведомления."
     )
     assert "WordPress 6.8.3" in release
     assert "PHP: 7.2.24" in release
     assert vulnerability.startswith(
-        "Тест: имитация уведомления, подписчикам ничего не отправлено."
+        "Тест: имитация уведомления."
     )
     assert "top issue" in vulnerability
     assert message.replies[0] == "Собираю тестовые уведомления…"
