@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 
-from telegram import BotCommand, Update
+from telegram import Bot, BotCommand, BotCommandScopeChat, ReplyKeyboardMarkup, Update
+from telegram.error import TelegramError
 from telegram.ext import ContextTypes
 
 from wp_notify_bot.config import Settings, is_user_allowed
@@ -18,12 +20,30 @@ logger = logging.getLogger(__name__)
 DEPS_KEY = "deps"
 
 BOT_COMMANDS = [
-    BotCommand("start", "Подписаться на уведомления о релизах WordPress"),
-    BotCommand("stop", "Отписаться от уведомлений"),
-    BotCommand("status", "Последняя версия и время проверки"),
-    BotCommand("check", "Проверить релизы сейчас"),
-    BotCommand("simulate", "Имитировать уведомление о релизе и уязвимости"),
+    BotCommand("start", "Главное меню"),
 ]
+
+_MENU_PROMPT = "Выберите нужный раздел в меню ниже."
+
+SUBSCRIBE_BUTTON = "🔔 Подписаться"
+UNSUBSCRIBE_BUTTON = "🔕 Отписаться"
+STATUS_BUTTON = "📋 Статус"
+CHECK_BUTTON = "🔄 Проверить"
+SIMULATE_BUTTON = "🧪 Имитация"
+
+MAIN_MENU_ROWS: tuple[tuple[str, ...], ...] = (
+    (SUBSCRIBE_BUTTON, UNSUBSCRIBE_BUTTON),
+    (STATUS_BUTTON, CHECK_BUTTON),
+    (SIMULATE_BUTTON,),
+)
+
+
+def main_menu_markup() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [list(row) for row in MAIN_MENU_ROWS],
+        resize_keyboard=True,
+    )
+
 
 _TEST_BANNER = "Тест: имитация уведомления.\n\n"
 
@@ -46,6 +66,18 @@ def get_deps(context: ContextTypes.DEFAULT_TYPE) -> AppDeps:
     return context.application.bot_data[DEPS_KEY]
 
 
+async def clear_chat_command_menu(bot: Bot, chat_id: int) -> None:
+    try:
+        await bot.delete_my_commands(scope=BotCommandScopeChat(chat_id=chat_id))
+    except TelegramError:
+        logger.warning("Could not clear command menu for chat %s", chat_id)
+
+
+async def clear_chat_command_menus(bot: Bot, chat_ids: Iterable[int]) -> None:
+    for chat_id in sorted(set(chat_ids)):
+        await clear_chat_command_menu(bot, chat_id)
+
+
 async def _deny_if_needed(
     update: Update, settings: Settings
 ) -> bool:
@@ -59,6 +91,20 @@ async def _deny_if_needed(
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    deps = get_deps(context)
+    if await _deny_if_needed(update, deps.settings):
+        return
+    chat = update.effective_chat
+    if chat is not None:
+        await clear_chat_command_menu(context.bot, chat.id)
+    if update.effective_message:
+        await update.effective_message.reply_text(
+            _MENU_PROMPT,
+            reply_markup=main_menu_markup(),
+        )
+
+
+async def cmd_subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     deps = get_deps(context)
     if await _deny_if_needed(update, deps.settings):
         return
@@ -164,6 +210,25 @@ def _simulate_reply(sent: int, preview: SimulationPreview) -> str:
     elif preview.vulnerability_empty:
         lines.append("Серьёзных уязвимостей в фиде нет.")
     return "\n".join(lines)
+
+
+MENU_ACTIONS = {
+    SUBSCRIBE_BUTTON: cmd_subscribe,
+    UNSUBSCRIBE_BUTTON: cmd_stop,
+    STATUS_BUTTON: cmd_status,
+    CHECK_BUTTON: cmd_check,
+    SIMULATE_BUTTON: cmd_simulate,
+}
+
+
+async def on_menu_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    message = update.effective_message
+    if message is None or not message.text:
+        return
+    handler = MENU_ACTIONS.get(message.text)
+    if handler is None:
+        return
+    await handler(update, context)
 
 
 async def job_poll(context: ContextTypes.DEFAULT_TYPE) -> None:

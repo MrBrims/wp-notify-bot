@@ -2,18 +2,21 @@ from __future__ import annotations
 
 import logging
 
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from wp_notify_bot.bot.handlers import (
     BOT_COMMANDS,
+    MENU_ACTIONS,
     AppDeps,
     DEPS_KEY,
     cmd_check,
     cmd_simulate,
     cmd_start,
     cmd_status,
+    clear_chat_command_menus,
     cmd_stop,
     job_poll,
+    on_menu_button,
 )
 from wp_notify_bot.config import Settings, load_settings
 from wp_notify_bot.sources.registry import default_sources
@@ -54,6 +57,9 @@ def build_application(settings: Settings) -> Application:
     application.add_handler(CommandHandler("status", cmd_status))
     application.add_handler(CommandHandler("check", cmd_check))
     application.add_handler(CommandHandler("simulate", cmd_simulate))
+    application.add_handler(
+        MessageHandler(filters.Text(list(MENU_ACTIONS)), on_menu_button)
+    )
     return application
 
 
@@ -61,6 +67,10 @@ async def _post_init(application: Application) -> None:
     deps: AppDeps = application.bot_data[DEPS_KEY]
     await deps.store.init()
     await application.bot.set_my_commands(BOT_COMMANDS)
+    await clear_chat_command_menus(
+        application.bot,
+        [*await deps.store.known_chat_ids(), *deps.settings.allowed_user_ids],
+    )
     interval = deps.settings.poll_interval_seconds
     job_queue = application.job_queue
     if job_queue is None:

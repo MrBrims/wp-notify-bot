@@ -88,6 +88,13 @@ class Store:
                 rows = await cursor.fetchall()
         return [int(row[0]) for row in rows]
 
+    async def known_chat_ids(self) -> list[int]:
+        async with self._lock:
+            async with aiosqlite.connect(self._database_path) as db:
+                cursor = await db.execute("SELECT chat_id FROM subscribers")
+                rows = await cursor.fetchall()
+        return [int(row[0]) for row in rows]
+
     async def has_seen(self, source_id: str, uid: str) -> bool:
         async with self._lock:
             async with aiosqlite.connect(self._database_path) as db:

@@ -114,5 +114,6 @@ async def test_subscribe_and_unsubscribe(tmp_path: Path) -> None:
     assert set(await store.active_chat_ids()) == {100, 200}
     await store.unsubscribe(100)
     assert await store.active_chat_ids() == [200]
+    assert set(await store.known_chat_ids()) == {100, 200}
     await store.subscribe(100, 1)
     assert set(await store.active_chat_ids()) == {100, 200}
