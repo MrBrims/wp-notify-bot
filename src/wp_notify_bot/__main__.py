@@ -26,13 +26,13 @@ from wp_notify_bot.summarizer.routing import RoutingSummarizer
 
 
 def build_summarizer(settings: Settings) -> Summarizer:
-    vulnerability = None
+    openrouter = None
     if settings.openrouter_api_key.strip():
-        vulnerability = OpenRouterSummarizer(
+        openrouter = OpenRouterSummarizer(
             settings.openrouter_api_key.strip(),
             settings.openrouter_model,
         )
-    return RoutingSummarizer(PassthroughSummarizer(), vulnerability)
+    return RoutingSummarizer(PassthroughSummarizer(), openrouter)
 
 
 def build_application(settings: Settings) -> Application:

@@ -9,13 +9,17 @@ from wp_notify_bot.summarizer.base import Summarizer
 class PassthroughSummarizer(Summarizer):
     async def summarize(self, item: NormalizedItem) -> str:
         if item.kind == "core_release":
-            return _core_release_message(item)
+            return core_release_message(item)
         title = escape(item.title)
         url = escape(item.url, quote=True)
         return f"<b>{title}</b>\n\n{url}"
 
 
-def _core_release_message(item: NormalizedItem) -> str:
+def core_release_message(
+    item: NormalizedItem,
+    summary: str | None = None,
+    announcement_url: str | None = None,
+) -> str:
     payload = item.payload
     php = escape(str(payload.get("php_version") or "—"))
     mysql = escape(str(payload.get("mysql_version") or "—"))
@@ -25,11 +29,23 @@ def _core_release_message(item: NormalizedItem) -> str:
         quote=True,
     )
     version = escape(item.uid)
-    return (
-        f"<b>WordPress {version}</b>\n\n"
-        "Вышел новый релиз ядра WordPress.\n\n"
-        f"PHP: {php}\n"
-        f"MySQL: {mysql}\n\n"
-        f'<a href="{download}">Скачать</a>\n'
-        f'<a href="{releases}">Анонсы релизов</a>'
-    )
+    lines = [
+        f"<b>WordPress {version}</b>",
+        "",
+        "Вышел новый релиз ядра WordPress.",
+        "",
+    ]
+    prose = (summary or "").strip()
+    if prose:
+        lines.append(escape(prose))
+        lines.append("")
+    lines.append(f"PHP: {php}")
+    lines.append(f"MySQL: {mysql}")
+    lines.append("")
+    lines.append(f'<a href="{download}">Скачать</a>')
+    announcement = (announcement_url or "").strip()
+    if announcement:
+        href = escape(announcement, quote=True)
+        lines.append(f'<a href="{href}">Анонс</a>')
+    lines.append(f'<a href="{releases}">Анонсы релизов</a>')
+    return "\n".join(lines)

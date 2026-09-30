@@ -5,9 +5,9 @@
 [![WordPress](https://img.shields.io/badge/WordPress.org-API-21759B.svg)](https://api.wordpress.org/core/version-check/1.7/)
 [![Wordfence](https://img.shields.io/badge/Wordfence-Intelligence_v3-1E3A8A.svg)](https://www.wordfence.com/api/intelligence/v3/vulnerabilities/production)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
-[![Version](https://img.shields.io/badge/Version-1.0.4-green.svg)](#changelog)
+[![Version](https://img.shields.io/badge/Version-1.0.5-green.svg)](#changelog)
 
-Local Docker Telegram bot that notifies subscribers about official WordPress core releases and about serious WordPress core and plugin vulnerabilities. Core releases come from the WordPress.org version-check API. Vulnerabilities come from the Wordfence Intelligence v3 production feed (CVSS 7.0 and above) with a short Russian summary from OpenRouter (`openai/gpt-6-luna`). The bot does not scan a site you host. The first successful feed read marks the current archive as seen and sends nothing.
+Local Docker Telegram bot that notifies subscribers about official WordPress core releases and about serious WordPress core and plugin vulnerabilities. Core releases come from the WordPress.org version-check API, with a short Russian summary of the official release announcement. Vulnerabilities come from the Wordfence Intelligence v3 production feed (CVSS 7.0 and above). Both summaries use OpenRouter (`openai/gpt-6-luna`). The bot does not scan a site you host. The first successful feed read marks the current archive as seen and sends nothing.
 
 ## Requirements
 
@@ -87,7 +87,7 @@ Copy `.env` from `.env.example` before `make up`. Restart after changing env val
 | `POLL_INTERVAL_SECONDS` | Interval between WordPress.org checks (minimum 60, default 3600) |
 | `DATABASE_PATH` | SQLite path in the container (default `/app/data/bot.db`) |
 | `WORDPRESS_API_URL` | Core version-check endpoint |
-| `OPENROUTER_API_KEY` | OpenRouter key used to summarize vulnerability alerts. Empty: the alert still goes out with CVSS, CVE, versions, and the link, without the two-sentence summary |
+| `OPENROUTER_API_KEY` | OpenRouter key used to summarize vulnerability alerts and WordPress core release announcements. Empty: both alerts still go out with their facts and links, without the two-sentence summary |
 | `OPENROUTER_MODEL` | OpenRouter model (default `openai/gpt-6-luna`) |
 | `WORDFENCE_API_KEY` | Free Wordfence Intelligence key from the account Integrations page. Empty: vulnerability polling stays off and core releases continue |
 | `WORDFENCE_API_URL` | Production feed URL (default `https://www.wordfence.com/api/intelligence/v3/vulnerabilities/production`) |
@@ -116,9 +116,9 @@ wp-notify-bot/
 │   ├── bot/handlers.py             # /start /stop /status /check /simulate
 │   ├── pipeline/run.py             # fetch → seen → summarize → fan-out
 │   ├── pipeline/simulate.py        # fake core release for /simulate
-│   ├── sources/                    # WordPress core and Wordfence production feed
+│   ├── sources/                    # WordPress core, release announcements, Wordfence feed
 │   ├── storage/db.py               # subscribers and seen_items
-│   ├── summarizer/                 # release template; OpenRouter for vulnerabilities
+│   ├── summarizer/                 # OpenRouter summaries for releases and vulnerabilities
 │   └── notify/telegram.py          # Telegram send + per-chat errors
 ├── tests/                          # API fixture and SQLite tests
 ├── data/                           # SQLite volume on the host (gitignored)
@@ -132,6 +132,10 @@ wp-notify-bot/
 Host `./data` is mounted at `/app/data` in the container.
 
 ## Changelog
+
+### 1.0.5
+
+- **NEW**: OpenRouter (`openai/gpt-6-luna`) adds a two-sentence Russian summary of the official WordPress.org News announcement to core release alerts; PHP, MySQL, and download links stay in the template. If the key, announcement, or model is missing, the release alert still goes out without the summary
 
 ### 1.0.4
 
